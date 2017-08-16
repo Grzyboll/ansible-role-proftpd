@@ -1,0 +1,41 @@
+---
+- name: Create a new database '{{ sql_db_dbname }}'
+  mysql_db:
+    login_host: '{{ sql_db_hostname }}'
+    login_user: '{{ sql_db_user }}' 
+    login_password: '{{ sql_db_password }}'
+    name: '{{ sql_db_dbname }}'
+    state: present
+  tags: [sql_create]
+
+- name: Create database user '{{ proftpd_db_user }}'
+  mysql_user:
+    login_host: '{{ sql_db_hostname }}'
+    login_user: '{{ sql_db_user }}'
+    login_password: '{{ sql_db_password }}'
+    name: '{{ proftpd_db_user }}' 
+    password: '{{ proftpd_db_password }}'
+    priv: '{{ sql_db_dbname }}.*:ALL'
+    state: present
+  tags: [sql_create]
+
+- name: Copy sql.conf.j2 conf for proftpd
+  template:
+    src: sql.conf.j2 
+    dest: /tmp/sql_proftpd_conf.sql
+    owner: root
+    group: root
+    mode: 0644
+  register: copy_sql_proftpd_conf
+  tags: [sql_import]
+
+- name: Import sql for proftpd
+  mysql_db:
+    login_host: '{{ sql_db_hostname }}'
+    login_user: '{{ sql_db_user }}'
+    login_password: '{{ sql_db_password }}'
+    state: import
+    name: '{{ sql_db_dbname }}'
+    target: /tmp/sql_proftpd_conf.sql
+  when: copy_sql_proftpd_conf.changed
+  tags: [sql_import]

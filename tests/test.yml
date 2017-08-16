@@ -1,0 +1,5 @@
+---
+- hosts: fortestftp
+  roles:
+    - ansible-role-mysql
+    - ansible-role-proftpd

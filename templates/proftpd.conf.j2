@@ -1,0 +1,213 @@
+###########################################################################
+# /etc/proftpd/proftpd.conf -- This is a basic ProFTPD configuration file.
+# To really apply changes reload proftpd after modifications.
+# #########################################################################
+
+# Includes DSO modules
+Include /etc/modules.conf
+
+# Set off to disable IPv6 support which is annoying on IPv4 only boxes.
+UseIPv6				off
+
+# If set on you can experience a longer connection delay in many cases.
+IdentLookups			off
+ServerIdent 			off
+ServerName			"{{ proftpd_hostname }}"
+ServerType			standalone
+DeferWelcome			off
+#ServerAdmin			@domain.com
+
+# Use this to jail all users in their homes 
+#DefaultRoot		~
+UseReverseDNS 			off
+MultilineRFC2228		on
+DefaultServer			on
+ShowSymlinks			on
+TimeoutLogin			120
+TimeoutNoTransfer		1800
+TimeoutStalled                  1800
+TimeoutIdle                     1800
+
+DisplayLogin                    welcome.msg
+DisplayChdir               	.message true
+ListOptions                	"-l"
+#The WtmpLog directive controls proftpd's logging of ftp connections to the host system's wtmp file (used by such commands as `last'). By default, all connections are logged via wtmp
+WtmpLog				off
+
+# Port 21 is the standard FTP port.
+Port				21
+TransferLog /var/log/proftpd/xferlog
+SystemLog   /var/log/proftpd/proftpd.log
+DebugLevel 10
+LoginPasswordPrompt on
+
+#It is not needed if everything we have in the main file
+#Include /etc/proftpd/sql.conf
+SQLLogFile /var/log/proftpd/mod_sql.log
+
+DenyFilter			\*.*/
+# To prevent DoS attacks, set the maximum number of child processes
+# to 30.  If you need to allow more than 30 concurrent connections
+# at once, simply increase this value.  Note that this ONLY works
+# in standalone mode, in inetd mode you should use an inetd server
+# that allows you to limit maximum number of processes per service
+# (such as xinetd)
+
+#Global maximums
+
+#Sets the maximum number of child processes to be spawned - Limits the overall number of connections
+MaxInstances                    60
+
+#Limit the number of connections per userid - Limits the number of clients that may be logged in at one time using the same username
+MaxClientsPerUser		20
+
+#Limits the connections per client machine -  Limits the number of clients that may be connecting from the same host
+#MaxClientsPerHost
+		
+#Limits the number of users that can connect -  Limits the number of connections on a per-server/vhost basis
+#MaxClients
+
+# Users require a valid shell listed in /etc/shells to login.
+# Use this directive to release that constrain.
+RequireValidShell               off
+	
+# In some cases you have to specify passive ports range to by-pass
+# firewall limitations. Ephemeral ports can be used for that, but
+# feel free to use a more narrow range.
+PassivePorts                  49152 65534
+
+# If your host was NATted, this option is useful in order to
+# allow passive tranfers to work. You have to use your public
+# address and opening the passive ports used on your firewall as well.
+#MasqueradeAddress            0.0.0.0 
+
+# Set the user and group that the server normally runs at.
+User                            ftp 
+Group                           ftp
+
+# Umask 022 is a good standard umask to prevent new files and dirs
+# (second parm) from being group and world writable.
+Umask                           002  002
+
+# Uncomment this if you are using NIS or LDAP via NSS to retrieve passwords:
+# PersistentPasswd              off
+
+<Global>
+#SQLMinID is a quick way of setting both SQLMinUserGID and SQLMinUserUID. These values are checked whenever retrieving a user's GID or UID. Default 999
+SQLMinID 1
+
+AllowOverwrite                  on
+		
+########################################################################### SQL CONFIG
+		# This is required to use both PAM-based authentication and local passwords
+		AuthOrder       mod_sql.c
+		#AuthOrder                      mod_auth_pam.c* mod_auth_unix.c
+		CreateHome                      on
+
+	<IfModule mod_sql_passwd.c>
+	    	SQLPasswordEngine on
+	    	SQLPasswordEncoding hex
+	</IfModule>
+		DefaultRoot             ~
+		SQLBackend              mysql
+		# The passwords in MySQL are encrypted using CRYPT
+		SQLAuthenticate on
+		SQLEngine on
+
+		SQLAuthTypes           Crypt MD5
+		SQLAuthenticate        users* groups*
+
+		# used to connect to the database
+		# databasename@host database_user user_password
+		
+		SQLConnectInfo {{ proftpd_db_hosts }} {{ proftpd_db_user }} {{ proftpd_db_password }}
+
+		# Here we tell ProFTPd the names of the database columns in the "usertable"
+		# we want it to interact with. Match the names with those in the db
+		SQLUserInfo     ftpuser userid passwd uid gid homedir shell
+
+		# Here we tell ProFTPd the names of the database columns in the "grouptable"
+		# we want it to interact with. Again the names match with those in the db
+		SQLGroupInfo    ftpgroup groupname gid members
+		# set min UID and GID - otherwise these are 999 each
+		SQLMinID        500
+
+		# Create a user's home directory on demand if it doesn't exist
+		# CreateHome on skel /home/ftp/ dirmode 777
+
+		# Update count every time user logs in
+		SQLLog PASS updatecount
+		#SQLShowInfo PASS "230" "Last login was: %{login_time}"
+		SQLNamedQuery updatecount UPDATE "count=count+1, accessed=now() WHERE userid='%u'" ftpuser
+
+		# Update modified everytime user uploads or deletes a file
+		SQLLog  STOR,DELE modified
+		SQLNamedQuery modified UPDATE "modified=now() WHERE userid='%u'" ftpuser
+
+		# User quotas
+		# ===========
+		QuotaEngine on
+		QuotaDirectoryTally on
+		QuotaDisplayUnits Mb
+		QuotaShowQuotas on
+
+		SQLNamedQuery get-quota-limit SELECT "name, quota_type, per_session, limit_type, bytes_in_avail, bytes_out_avail, bytes_xfer_avail, files_in_avail, files_out_avail, files_xfer_avail FROM ftpquotalimits WHERE name = '%{0}' AND quota_type = '%{1}'"
+
+		SQLNamedQuery get-quota-tally SELECT "name, quota_type, bytes_in_used, bytes_out_used, bytes_xfer_used, files_in_used, files_out_used, files_xfer_used FROM ftpquotatallies WHERE name = '%{0}' AND quota_type = '%{1}'"
+
+		SQLNamedQuery update-quota-tally UPDATE "bytes_in_used = bytes_in_used + %{0}, bytes_out_used = bytes_out_used + %{1}, bytes_xfer_used = bytes_xfer_used + %{2}, files_in_used = files_in_used + %{3}, files_out_used = files_out_used + %{4}, files_xfer_used = files_xfer_used + %{5} WHERE name = '%{6}' AND quota_type = '%{7}'" ftpquotatallies
+
+		SQLNamedQuery insert-quota-tally INSERT "%{0}, %{1}, %{2}, %{3}, %{4}, %{5}, %{6}, %{7}" ftpquotatallies
+
+		QuotaLimitTable sql:/get-quota-limit
+		QuotaTallyTable sql:/get-quota-tally/update-quota-tally/insert-quota-tally
+
+		SQLNamedQuery userquota SELECT "IF ((SELECT (@availmbytes:=ROUND((`bytes_in_avail`/1048576),2)) FROM `ftpquotalimits` WHERE `name`='%u') = 0, \"No user quota applies.\", CONCAT(\"User quota: Used \", (SELECT (@usedmbytes:=ROUND((`bytes_in_used`/1048576),2)) FROM `ftpquotatallies` WHERE `name`='%u'), \"MB from \", @availmbytes, \"MB. You have \", ROUND(@availmbytes-@usedmbytes,2), \"MB available space.\"))"
+
+		RootLogin off
+		RequireValidShell off
+		###########################################################################
+</Global>
+
+# This is useful for masquerading address with dynamic IPs:
+# refresh any configured MasqueradeAddress directives every 8 hours
+#<IfModule mod_dynmasq.c>
+# DynMasqRefresh 28800
+#</IfModule>
+
+# <IfModule mod_quotatab.c>
+# QuotaEngine off
+# </IfModule>
+
+<IfModule mod_ratio.c>
+	Ratios off
+</IfModule>
+
+# Delay engine reduces impact of the so-called Timing Attack described in
+# http://security.lss.hr/index.php?page=details&ID=LSS-2004-10-02
+# It is on by default. 
+<IfModule mod_delay.c>
+	DelayEngine on
+</IfModule>
+
+<IfModule mod_ctrls.c>
+	ControlsEngine        off
+	ControlsMaxClients    2
+	ControlsLog           /var/log/proftpd/controls.log
+	ControlsInterval      5
+	ControlsSocket        /var/run/proftpd/proftpd.sock
+</IfModule>
+
+<IfModule mod_ctrls_admin.c>
+	AdminControlsEngine off
+</IfModule>
+
+# Alternative authentication frameworks
+#Include /etc/proftpd/ldap.conf
+
+#We load all modules here or in modules.conf file
+# <IfModule mod_dso.c>
+# If mod_tls was built as a shared/DSO module, load it
+# LoadModule mod_tls.c
+# </IfModule>
+

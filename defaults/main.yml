@@ -1,0 +1,24 @@
+---
+# defaults file for ansible-role-proftpd
+proftpd_hostname: "{{ ansible_hostname }}"
+proftpd_fqdn: "{{ ansible_fqdn }}"
+
+# proftpd config & credentials
+proftpd_db_hosts: ftp@localhost:3306
+proftpd_db_user: proftpd
+proftpd_db_password: 12345
+proftpd_default_uid: 48
+proftpd_default_gid: 48
+
+# proftpd for sample user
+proftpd_example_user: exampleuser
+proftpd_example_password: secret
+proftpd_example_uid: 48 
+proftpd_example_gid: 48
+proftpd_example_path: "/var/www/html"
+
+# sql config & credentials
+sql_db_user: root
+sql_db_dbname: ftp
+sql_db_hostname: "{{ ansible_hostname }}"
+sql_db_password: root

@@ -1,0 +1,54 @@
+CREATE TABLE IF NOT EXISTS ftpgroup (
+groupname varchar(16) NOT NULL default '',
+gid smallint(6) NOT NULL default '5500',
+members varchar(16) NOT NULL default '',
+KEY groupname (groupname)
+) ENGINE=InnoDB COMMENT='ProFTP group table';
+
+CREATE TABLE IF NOT EXISTS ftpquotalimits (
+name varchar(30) default NULL,
+quota_type enum('user','group','class','all') NOT NULL default 'user',
+per_session enum('false','true') NOT NULL default 'false',
+limit_type enum('soft','hard') NOT NULL default 'soft',
+bytes_in_avail int(10) unsigned NOT NULL default '0',
+bytes_out_avail int(10) unsigned NOT NULL default '0',
+bytes_xfer_avail int(10) unsigned NOT NULL default '0',
+files_in_avail int(10) unsigned NOT NULL default '0',
+files_out_avail int(10) unsigned NOT NULL default '0',
+files_xfer_avail int(10) unsigned NOT NULL default '0'
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS ftpquotatallies (
+name varchar(30) NOT NULL default '',
+quota_type enum('user','group','class','all') NOT NULL default 'user',
+bytes_in_used int(10) unsigned NOT NULL default '0',
+bytes_out_used int(10) unsigned NOT NULL default '0',
+bytes_xfer_used int(10) unsigned NOT NULL default '0',
+files_in_used int(10) unsigned NOT NULL default '0',
+files_out_used int(10) unsigned NOT NULL default '0',
+files_xfer_used int(10) unsigned NOT NULL default '0'
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS ftpuser (
+id int(10) unsigned NOT NULL auto_increment,
+userid varchar(32) NOT NULL default '',
+passwd varchar(32) NOT NULL default '',
+uid smallint(6) NOT NULL default '{{ proftpd_default_uid }}',
+gid smallint(6) NOT NULL default '{{ proftpd_default_gid }}',
+homedir varchar(255) NOT NULL default '',
+shell varchar(16) NOT NULL default '/sbin/nologin',
+count int(11) NOT NULL default '0',
+accessed datetime NOT NULL default '0000-00-00 00:00:00',
+modified datetime NOT NULL default '0000-00-00 00:00:00',
+PRIMARY KEY (id),
+UNIQUE KEY userid (userid)
+) ENGINE=InnoDB COMMENT='ProFTP user table';
+
+
+# Create sample user with 50MB quota
+INSERT IGNORE INTO `ftpgroup` (`groupname`, `gid`, `members`) VALUES ('ftp', 50, 'ftp');
+
+INSERT IGNORE INTO `ftpquotalimits` (`name`, `quota_type`, `per_session`, `limit_type`, `bytes_in_avail`, `bytes_out_avail`, `bytes_xfer_avail`, `files_in_avail`, `files_out_avail`, `files_xfer_avail`) VALUES ('{{ proftpd_example_user }}', 'user', 'true', 'hard', 52428800, 0, 0, 0, 0, 0);
+
+INSERT IGNORE INTO `ftpuser` (`id`,`userid`, `passwd`, `uid`, `gid`, `homedir`, `shell`, `count`, `accessed`, `modified`) VALUES ('', '{{ proftpd_example_user }}', MD5('{{ proftpd_example_password }}'), '{{ proftpd_example_uid }}', '{{ proftpd_example_gid }}', '{{ proftpd_example_path }}', '/sbin/nologin', 0, '', '');
+

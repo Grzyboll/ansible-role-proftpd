@@ -1,0 +1,36 @@
+---
+# tasks file for ansible-role-proftpd
+- name: Install list of packages
+  yum: name={{item}} state=latest update_cache=yes
+  with_items:
+    - proftpd
+    - proftpd-mysql
+    - MySQL-python
+  tags: [proftpd] 
+
+- name: Configure modules.conf servers in /etc/modules.conf
+  template:
+    src: modules.conf.j2
+    dest: /etc/modules.conf
+    owner: root
+    group: root
+    mode: 0644
+    backup: yes 
+  tags: [proftpd]
+
+- name: Configure proftpd.conf servers in /etc/proftpd.conf
+  template:
+    src: proftpd.conf.j2
+    dest: /etc/proftpd.conf
+    owner: root
+    group: root
+    mode: 0644
+    backup: yes
+  notify: restart proftpd
+  tags: [proftpd]
+
+- name: Ensure Proftpd is started and enabled on boot.
+  service:
+    name: proftpd
+    state: started
+    enabled: yes
