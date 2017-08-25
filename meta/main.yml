@@ -10,6 +10,10 @@ galaxy_info:
   - name: EL
     versions:
     - all
+  categories:
+    - system
+    - fyp
+
   galaxy_tags:
     - proftpd
     - ansible
@@ -18,9 +22,5 @@ galaxy_info:
     - mariadb
     - ftp
     - sftp 
-
- categories:
-    - system
-    - fyp
 
 dependencies: []
