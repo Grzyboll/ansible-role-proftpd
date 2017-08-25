@@ -211,3 +211,16 @@ AllowOverwrite                  on
 # LoadModule mod_tls.c
 # </IfModule>
 
+########################################################################### SFTP CONFIG
+<IfModule mod_sftp.c>
+        <VirtualHost {{ proftpd_ip }}>  #sftp specific configs
+                SFTPEngine on
+                SFTPLog /var/log/proftpd/sftp.log
+                TransferLog /var/log/proftpd/xferlog-sftp.log
+                SFTPHostKey /etc/ssh/sftp_host_rsa_key
+                SFTPHostKey /etc/ssh/sftp_host_dsa_key
+                Port {{ proftpd_sftp_port }}
+        </VirtualHost>
+</IfModule>
+###########################################################################
+

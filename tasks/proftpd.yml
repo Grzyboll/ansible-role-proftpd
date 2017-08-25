@@ -8,6 +8,28 @@
     - MySQL-python
   tags: [proftpd] 
 
+- name: Check if RSA host keys for sftp exists
+  stat:
+    path: /etc/ssh/sftp_host_rsa_key
+  register: sftp_host_rsa_key
+  tags: [proftpd]
+
+- name: Generate new RSA host keys for sftp
+  command: ssh-keygen -f /etc/ssh/sftp_host_rsa_key -N '' -t rsa
+  when: sftp_host_rsa_key.stat.exists == False
+  tags: [proftpd]
+
+- name: Check if DSA host keys for sftp exists
+  stat:
+    path: /etc/ssh/sftp_host_dsa_key
+  register: sftp_host_dsa_key
+  tags: [proftpd]
+
+- name: Generate new DSA host keys for sftp
+  command: ssh-keygen -f /etc/ssh/sftp_host_dsa_key -N '' -t dsa
+  when: sftp_host_dsa_key.stat.exists == False
+  tags: [proftpd]
+
 - name: Configure modules.conf servers in /etc/modules.conf
   template:
     src: modules.conf.j2
@@ -34,3 +56,5 @@
     name: proftpd
     state: started
     enabled: yes
+  tags: [proftpd]
+
