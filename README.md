@@ -23,9 +23,9 @@ proftpd_fqdn: "{{ ansible_fqdn }}"
 proftpd_ip: "{{ ansible_default_ipv4.address }}"
 
 # proftpd config & credentials <--- Needed to add user to SQL and define which UID and GID should be default. This defaults should have rights to /var/www/html (apache or nginx rights).
-proftpd_db_hosts: ftp@localhost:3306
 proftpd_db_user: proftpd
 proftpd_db_password: 12345
+proftpd_db_host: "localhost"
 proftpd_default_uid: 48
 proftpd_default_gid: 48
 
