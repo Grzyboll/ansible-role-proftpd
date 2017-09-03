@@ -1,6 +1,6 @@
 ---
-- include: sql.yml
-  tags: [sql]
-
 - include: proftpd.yml
   tags: [proftpd]
+
+- include: sql.yml
+  tags: [sql]

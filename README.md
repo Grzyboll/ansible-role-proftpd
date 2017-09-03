@@ -7,22 +7,25 @@ Mostly based on: https://www.howtoforge.com/proftpd_mysql_virtual_hosting_debian
 Requirements
 ------------
 Centos/RHEL
-MySQL or MariaDB (I assume that data base exists), if not check or install MySQL from /tests/requirements.yml
+MySQL or MariaDB (I assume that data base exists), if not check or install MySQL locally using /tests/requirements.yml.
+DB can be also remotely, only edit defaults/main.yml
 
 Role Variables
 --------------
-Available variables are listed below, along with default values (see defaults/main.yml) and vault encrypted (see vars/vault.yml):
-To decrypt vault files use: ansible-vault edit or --ask-vault-pass
+Available variables are listed below, along with default values (see defaults/main.yml):
 
 defaults/main.yml
+
 ```
 # defaults file for ansible-role-proftpd
 proftpd_hostname: "{{ ansible_hostname }}"
 proftpd_fqdn: "{{ ansible_fqdn }}"
+proftpd_ip: "{{ ansible_default_ipv4.address }}"
 
 # proftpd config & credentials <--- Needed to add user to SQL and define which UID and GID should be default. This defaults should have rights to /var/www/html (apache or nginx rights).
 proftpd_db_hosts: ftp@localhost:3306
 proftpd_db_user: proftpd
+proftpd_db_password: 12345
 proftpd_default_uid: 48
 proftpd_default_gid: 48
 
@@ -32,22 +35,13 @@ proftpd_example_password: secret
 proftpd_example_uid: 48
 proftpd_example_gid: 48
 proftpd_example_path: "/var/www/html"
-
+proftpd_sftp_port: 222
 
 # sql config & credentials <--- Create ftp db for servicing quota
 sql_db_user: root
 sql_db_dbname: ftp
 sql_db_hostname: "{{ ansible_hostname }}"
-```
-vars/vault.yml
-```
----
-# proftpd configure & credentials
-proftpd_db_password: 12345
-
-# sql configure & credentials
-sql_db_password: zenek123!
-
+sql_db_password: root
 ```
 proftpd.conf
 ```
@@ -67,7 +61,7 @@ Example Playbook
 ----------------
 
 ```
-ansible-playbook site.yml -i hosts --ask-vault-pass -k
+ansible-playbook site.yml -i hosts -k
 
 ```
 

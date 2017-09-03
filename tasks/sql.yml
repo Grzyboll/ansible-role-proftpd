@@ -1,4 +1,11 @@
 ---
+
+- name: Install list of packages
+  yum: name={{item}} state=latest update_cache=yes
+  with_items:
+    - MySQL-python
+  tags: [sql_create]
+
 - name: Create a new database '{{ sql_db_dbname }}'
   mysql_db:
     login_host: '{{ sql_db_hostname }}'

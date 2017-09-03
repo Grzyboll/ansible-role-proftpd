@@ -120,7 +120,7 @@ AllowOverwrite                  on
 		# used to connect to the database
 		# databasename@host database_user user_password
 		
-		SQLConnectInfo {{ proftpd_db_hosts }} {{ proftpd_db_user }} {{ proftpd_db_password }}
+		SQLConnectInfo {{ sql_db_dbname }}@{{ sql_db_hostname }}:3306 {{ proftpd_db_user }} {{ proftpd_db_password }}
 
 		# Here we tell ProFTPd the names of the database columns in the "usertable"
 		# we want it to interact with. Match the names with those in the db

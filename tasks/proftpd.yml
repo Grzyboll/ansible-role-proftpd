@@ -5,7 +5,6 @@
   with_items:
     - proftpd
     - proftpd-mysql
-    - MySQL-python
   tags: [proftpd] 
 
 - name: Check if RSA host keys for sftp exists
@@ -49,6 +48,37 @@
     mode: 0644
     backup: yes
   notify: restart proftpd
+  tags: [proftpd]
+
+- name: Check if mod_tls.so exists in /usr/libexec/proftpd/
+  stat:
+    path: /usr/libexec/proftpd/mod_tls.so
+  register: mod_tls_exists
+  tags: [proftpd]
+
+- name: Copy mod_tls.so for proftpd
+  copy:
+    src: "{{ role_path }}/files/mod_tls.so"
+    dest: /usr/libexec/proftpd/mod_tls.so
+    owner: root
+    group: root
+    mode: 0755
+  when: mod_tls_exists.stat.exists == False
+  tags: [proftpd]
+
+- name: Open FTP port 21 on firewalld
+  firewalld:
+    service: ftp
+    permanent: true
+    state: enabled
+  tags: [proftpd]
+
+- name: Open FTP port 222 on firewalld
+  firewalld:
+    port: 222/tcp
+    permanent: true
+    state: enabled
+  notify: restart firewalld
   tags: [proftpd]
 
 - name: Ensure Proftpd is started and enabled on boot.
